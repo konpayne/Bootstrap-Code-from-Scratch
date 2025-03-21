@@ -1,0 +1,87 @@
+---
+title: "Payne_DM_Lab#2"
+author: "Konnor Payne"
+date: "2025-02-04"
+output: word_document
+---
+
+```{r}
+library(ggpubr)
+library(dplyr)
+library(MASS)
+library(ISwR)
+```
+
+```{r}
+data("cystfibr")
+dim(cystfibr)
+attach(cystfibr)
+head(cystfibr)
+a=lm(pemax~fev1+rv+frc)
+summary=summary(a)
+summary
+confint(a)
+```
+
+```{r}
+#size of sample
+n=25
+#creating new vectors to pull values from in the boostrap
+urn.x1=cystfibr$fev1
+urn.x2=cystfibr$rv
+urn.x3=cystfibr$frc
+urn.y=cystfibr$pemax
+trials=10000
+#empty  vector
+intercept = NULL 
+beta1 = NULL
+beta2 = NULL
+beta3 = NULL
+confint = NULL
+
+#loop for boostrapping
+for (i in 1:trials) { 
+  bs.x1 = sample(urn.x1, n, replace = T)
+  bs.x2 = sample(urn.x2, n, replace = T)
+  bs.x3 = sample(urn.x3, n, replace = T)
+  bs.y = sample(urn.y, n, replace = T) 
+#runs regression with bootstrapped data
+  bs.study = lm(formula = bs.y~bs.x1+bs.x2+bs.x3) 
+  bs.summary = summary(bs.study)
+ #extracts the coefficients from the model
+  intercept[i] = bs.summary$coefficients[1]
+  beta1[i] = bs.summary$coefficients[2]
+  beta2[i] = bs.summary$coefficients[3]
+  beta3[i] = bs.summary$coefficients[4]
+}
+
+#coefficient estimates and confidence intervals 
+#intercept (Beta0)
+est.intercept=sum(intercept)/trials
+#fev1 (Beta1)
+est.beta1=sum(beta1)/trials
+#rv (Beta2)
+est.beta2=sum(beta2)/trials
+#frc (Beta3)
+est.beta3=sum(beta3)/trials
+
+#Calculate 95% confidence intervals (percentile method)
+confint.intercept = quantile(intercept, c(0.025, 0.975))
+confint.beta1 = quantile(beta1, c(0.025, 0.975))
+confint.beta2 = quantile(beta2, c(0.025, 0.975))
+confint.beta3 = quantile(beta3, c(0.025, 0.975))
+  
+#Print results
+cat("Intercept Estimate (Beta0):", est.intercept, "\n")
+cat("Intercept 95% CI:", confint.intercept, "\n\n")
+
+cat("fev1 (Beta1) Estimate:", est.beta1, "\n")
+cat("Fev1 (Beta1) 95% CI:", confint.beta1, "\n\n")
+
+cat("rv (Beta2) Estimate:", est.beta2, "\n")
+cat("rv (Beta2) 95% CI:", confint.beta2, "\n\n")
+
+cat("frc (Beta3) Estimate:", est.beta3, "\n")
+cat("frc (Beta3) 95% CI:", confint.beta3, "\n")
+```
+
